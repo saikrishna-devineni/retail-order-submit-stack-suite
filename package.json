@@ -1,0 +1,40 @@
+{
+  "name": "retail-order-submit-stack-suite",
+  "version": "1.0.0",
+  "description": "A TypeScript project for orchestrating API test calls for the Order Submit APIs.",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node -r dotenv/config src/orchestrator.ts",
+    "start:dev": "ts-node -r dotenv/config src/orchestrator.ts dotenv_config_path=.env.dev",
+    "start:staging": "ts-node -r dotenv/config src/orchestrator.ts dotenv_config_path=.env.staging",
+    "start:prod": "ts-node -r dotenv/config src/orchestrator.ts dotenv_config_path=.env.prod",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "Sai Krishna Devineni",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {    
+    "axios": "^1.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "@types/axios": "^0.14.0",
+    "@types/dotenv": "^8.2.0",
+    "@types/inquirer": "^8.2.12",
+    "@types/jest": "^29.5.3",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^20.4.2",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.5",
+    "dotenv": "^17.2.3",
+    "eslint": "^8.50.0",
+    "inquirer": "^8.2.7",
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
