@@ -1,90 +1,66 @@
 import axios from 'axios';
-import inquirer from 'inquirer';
 import chalk from 'chalk';
 
 export async function addFsiToCart(context: Record<string, any>): Promise<Record<string, any>> {
 
-        let selectedProductId = context.root_product_type_id;
+    let selectedProductId = context.root_product_type_id;
 
-        // If we have available products, let user select
-        if (context.available_products && context.available_products.length > 0) {
-            console.log(chalk.cyan('\n===> Select FSI Product to Add to Cart <==='));
-            
-            const choices = context.available_products.map((product: any) => ({
-                name: `${product.name}\n   ${product.description}`,
-                value: product.id,
-                short: product.name
-            }));
-
-            // Add option to cancel
-            choices.push({
-                name: chalk.red('Cancel - Do not add any product'),
-                value: 'CANCEL',
-                short: 'Cancel'
-            });
-
-            const answer = await inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'selectedProductId',
-                    message: 'Select an FSI product to add to cart:',
-                    choices: choices,
-                    pageSize: 15
-                }
-            ]);
-
-            if (answer.selectedProductId === 'CANCEL') {
-                console.log(chalk.yellow('\n✗ User cancelled adding FSI to cart.'));
-                context.stop_orchestration = true;
-                return { cart_id: context.cart_id, stop_orchestration: true };
+    // If we have available products, use the first one or the one specified in context
+    if (context.available_products && context.available_products.length > 0) {
+        console.log(chalk.cyan('\n===> Adding FSI Product to Cart <==='));
+        
+        // If a specific product is configured, find it
+        if (context.root_product_type_id) {
+            const product = context.available_products.find((p: any) => p.id === selectedProductId);
+            if (product) {
+                console.log(chalk.green(`\n✓ Using configured product: ${product.name}`));
+                console.log(`  Product ID: ${selectedProductId}`);
+                console.log(`  Description: ${product.description}`);
+            } else {
+                console.log(chalk.yellow(`\n⚠ Configured product ID '${selectedProductId}' not found in available products.`));
+                console.log(chalk.yellow('Using first available product instead.'));
+                selectedProductId = context.available_products[0].id;
+                console.log(chalk.green(`\n✓ Selected: ${context.available_products[0].name}`));
+                console.log(`  Product ID: ${selectedProductId}`);
+                console.log(`  Description: ${context.available_products[0].description}`);
             }
-
-            selectedProductId = answer.selectedProductId;
-            
-            // Find the selected product to show details
-            const selectedProduct = context.available_products.find((p: any) => p.id === selectedProductId);
-            
-            console.log(chalk.green(`\n✓ Selected: ${selectedProduct.name}`));
-            console.log(`  Product ID: ${selectedProductId}`);
-            console.log(`  Description: ${selectedProduct.description}`);
-        } else if (!context.root_product_type_id) {
-            // No products available and no default ID provided
-            console.log(chalk.red('\n✗ No products available and no default product ID provided.'));
-            console.log(chalk.red('Cannot proceed with adding FSI to cart.'));
-            context.stop_orchestration = true;
-            return { stop_orchestration: true };
         } else {
-            // Validate that the default product ID exists in available products
-            if (context.available_products && context.available_products.length > 0) {
-                const productExists = context.available_products.some((p: any) => p.id === selectedProductId);
-                if (!productExists) {
-                    console.log(chalk.red(`\n✗ Default product ID '${selectedProductId}' not found in available products.`));
-                    context.stop_orchestration = true;
-                    return { stop_orchestration: true };
-                }
-            }
-            console.log(chalk.yellow('\nNo product selection needed. Using default product.'));
-            console.log(`Product ID: ${selectedProductId}`);
+            // No product configured, use first available
+            selectedProductId = context.available_products[0].id;
+            const firstProduct = context.available_products[0];
+            console.log(chalk.green(`\n✓ Using first available product: ${firstProduct.name}`));
+            console.log(`  Product ID: ${selectedProductId}`);
+            console.log(`  Description: ${firstProduct.description}`);
         }
+    } else if (!context.root_product_type_id) {
+        // No products available and no default ID provided
+        console.log(chalk.red('\n✗ No products available and no default product ID provided.'));
+        console.log(chalk.red('Cannot proceed with adding FSI to cart.'));
+        context.stop_orchestration = true;
+        return { stop_orchestration: true };
+    } else {
+        console.log(chalk.yellow('\nUsing configured product ID.'));
+        console.log(`Product ID: ${selectedProductId}`);
+    }
 
-        const response = await axios.post(`${context.baseUrl}/v1/sales/cart/items`, {
-            product_type_id: selectedProductId,
-            shopping_cart_id: context.cart_id,
-        }, {
-            headers: {
-                Authorization: `Bearer ${context.jwt_token}`,
-                'trace-id': context['trace-id'],
-                'Content-Type': 'application/json',
-            },
-        });
+    const response = await axios.post(`${context.baseUrl}/v1/sales/cart/items`, {
+        product_type_id: selectedProductId,
+        shopping_cart_id: context.cart_id,
+    }, {
+        headers: {
+            Authorization: `Bearer ${context.jwt_token}`,
+            'trace-id': context['trace-id'],
+            'Content-Type': 'application/json',
+        },
+    });
 
-        const responseJson = response.data;
+    const responseJson = response.data;
 
-        console.log(chalk.green('\n✓ FSI added to cart successfully!'));
-        console.log('Cart ID:', responseJson.id);
+    console.log(chalk.green('\n✓ FSI added to cart successfully!'));
+    console.log('Cart ID:', responseJson.id);
 
-        return { 
-            cart_id: responseJson.id,
-            selected_product_id: selectedProductId
-        };
+    return { 
+        cart_id: responseJson.id,
+        selected_product_id: selectedProductId
+    };
 }
